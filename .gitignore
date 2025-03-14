@@ -1,0 +1,132 @@
+# ==================== Python核心规则 ====================  
+__pycache__/  
+*.py[cod]  
+*$py.class  
+*.so  
+.Python  
+build/  
+develop-eggs/  
+dist/  
+downloads/  
+eggs/  
+.eggs/  
+lib/  
+lib64/  
+parts/  
+sdist/  
+var/  
+wheels/  
+*.egg-info/  
+.installed.cfg  
+*.egg  
+*.manifest  
+*.spec  
+
+# ==================== 虚拟环境 ====================  
+# 常见Python虚拟环境目录  
+venv/  
+.venv/  
+env/  
+venv*/  
+pyvenv.cfg  
+
+# ==================== IDE配置 ====================  
+# VSCode  
+.vscode/  
+!.vscode/settings.json  
+!.vscode/tasks.json  
+!.vscode/launch.json  
+!.vscode/extensions.json  
+
+# PyCharm/IntelliJ  
+.idea/  
+*.iml  
+*.ipr  
+*.iws  
+
+# Sublime Text  
+*.sublime-workspace  
+
+# ==================== 系统文件 ====================  
+# macOS  
+.DS_Store  
+.AppleDouble  
+.LSOverride  
+
+# Windows  
+Thumbs.db  
+ehthumbs.db  
+[Dd]esktop.ini  
+$RECYCLE.BIN/  
+
+# Linux  
+.nfs*  
+*.swp  
+*.swo  
+
+# ==================== 开发环境文件 ====================  
+.env  
+.env.local  
+.env.development  
+.env.test  
+.env.production  
+.env*.bak  
+
+# 本地开发配置文件  
+local_settings.py  
+local_config.ini  
+/secrets/  
+
+# ==================== 测试相关 ====================  
+.coverage  
+htmlcov/  
+.coverage.*  
+.cache  
+.pytest_cache/  
+nosetests.xml  
+
+# ==================== 日志文件 ====================  
+*.log  
+*.log.*  
+logs/  
+log/  
+
+# ==================== 数据库文件 ====================  
+*.sqlite  
+*.db  
+*.db-journal  
+
+# ==================== Docker相关 ====================  
+docker-compose.yml.bak  
+docker-compose.override.yml  
+.dockerignore  
+docker-data/  
+
+# ==================== 包管理器 ====================  
+pip-log.txt  
+pip-delete-this-directory.txt  
+Pipfile.lock  
+poetry.lock  
+requirements/*.txt  
+!requirements/base.txt  # 示例：保留基础依赖文件  
+
+# ==================== Jupyter Notebook ====================  
+.ipynb_checkpoints/  
+*.ipynb  
+
+# ==================== 构建工具 ====================  
+*.manifest  
+*.spec  
+
+# ==================== 其他 ====================  
+# 大型数据文件  
+*.csv  
+*.h5  
+*.npy  
+*.pkl  
+*.pth  
+
+# 加密文件  
+*.key  
+*.pem  
+*.crt  
