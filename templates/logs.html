@@ -1,0 +1,263 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>无人机管理系统 - 系统日志</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-white shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <h1 class="text-xl font-bold text-gray-800">无人机管理系统</h1>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="/dashboard" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">控制面板</a>
+                        <a href="/logs" class="border-blue-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">系统日志</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <span id="username-display" class="text-sm text-gray-600 mr-4"></span>
+                        <button id="logout-btn" type="button" class="relative inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                            退出登录
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="bg-white shadow overflow-hidden sm:rounded-md">
+            <div class="px-4 py-5 border-b border-gray-200 sm:px-6 flex justify-between items-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">系统日志</h3>
+                <div>
+                    <select id="log-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                        <option value="all">所有日志</option>
+                        <option value="system">系统日志</option>
+                        <option value="command">命令日志</option>
+                        <option value="auth">认证日志</option>
+                        <option value="error">错误日志</option>
+                    </select>
+                </div>
+            </div>
+            <div class="bg-white px-4 py-5 sm:p-6">
+                <div class="flex justify-end mb-4">
+                    <button id="refresh-btn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                        刷新日志
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">时间</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">类型</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">消息</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-table-body" class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">加载中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 bg-white shadow overflow-hidden sm:rounded-md">
+            <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">命令历史</h3>
+            </div>
+            <div class="bg-white px-4 py-5 sm:p-6">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">时间</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">命令</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">参数</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+                            </tr>
+                        </thead>
+                        <tbody id="commands-table-body" class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">加载中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 检查是否已登录
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+            
+            // 显示用户名
+            const username = localStorage.getItem('username');
+            document.getElementById('username-display').textContent = `欢迎，${username || '用户'}`;
+            
+            // 加载日志和命令
+            loadLogs();
+            loadCommands();
+            
+            // 设置过滤事件
+            document.getElementById('log-filter').addEventListener('change', loadLogs);
+            
+            // 设置刷新按钮
+            document.getElementById('refresh-btn').addEventListener('click', function() {
+                loadLogs();
+                loadCommands();
+            });
+        });
+        
+        // 退出登录
+        document.getElementById('logout-btn').addEventListener('click', function() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            localStorage.removeItem('role');
+            window.location.href = '/';
+        });
+        
+        // 加载日志
+        async function loadLogs() {
+            try {
+                const token = localStorage.getItem('token');
+                const filter = document.getElementById('log-filter').value;
+                let url = '/api/logs';
+                
+                if (filter !== 'all') {
+                    url += `?type=${filter}`;
+                }
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load logs');
+                }
+                
+                const data = await response.json();
+                
+                // 更新日志表格
+                const tableBody = document.getElementById('logs-table-body');
+                tableBody.innerHTML = '';
+                
+                if (data.logs.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">暂无日志记录</td>
+                    `;
+                    tableBody.appendChild(row);
+                } else {
+                    data.logs.forEach(log => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${log.timestamp}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${log.type || 'info'}</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">${log.message}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading logs:', error);
+                const tableBody = document.getElementById('logs-table-body');
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="px-6 py-4 text-center text-sm text-red-500">加载日志时出错</td>
+                    </tr>
+                `;
+            }
+        }
+        
+        // 加载命令历史
+        async function loadCommands() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/commands', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load commands');
+                }
+                
+                const data = await response.json();
+                
+                // 更新命令表格
+                const tableBody = document.getElementById('commands-table-body');
+                tableBody.innerHTML = '';
+                
+                if (data.commands.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">暂无命令记录</td>
+                    `;
+                    tableBody.appendChild(row);
+                } else {
+                    data.commands.forEach(cmd => {
+                        const row = document.createElement('tr');
+                        const params = cmd.parameters ? JSON.parse(cmd.parameters) : {};
+                        
+                        row.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${cmd.timestamp}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${cmd.command}</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">${JSON.stringify(params)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(cmd.status)}">
+                                    ${cmd.status}
+                                </span>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading commands:', error);
+                const tableBody = document.getElementById('commands-table-body');
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="px-6 py-4 text-center text-sm text-red-500">加载命令历史时出错</td>
+                    </tr>
+                `;
+            }
+        }
+        
+        // 获取状态类名
+        function getStatusClass(status) {
+            switch (status) {
+                case 'executed':
+                    return 'bg-green-100 text-green-800';
+                case 'pending':
+                    return 'bg-yellow-100 text-yellow-800';
+                case 'failed':
+                    return 'bg-red-100 text-red-800';
+                case 'completed':
+                    return 'bg-blue-100 text-blue-800';
+                default:
+                    return 'bg-gray-100 text-gray-800';
+            }
+        }
+    </script>
+</body>
+</html>
