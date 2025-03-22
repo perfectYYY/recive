@@ -3998,5 +3998,45 @@
   "user1000": {
     "password_hash": "e606e38b0d8c19b24cf0ee3808183162ea7cd63ff7912dbb22b5e803286b4446",
     "role": "user"
+  },
+  "CQUCHX0503001": {
+    "password_hash": "b0711c46bccc70e58f5ebc5d47acf5009abdeb4b527960cd2d461f7f24155bcd",
+    "role": "user"
+  },
+  "CQUCHX0503002": {
+    "password_hash": "29f811654ee9250a76f5b77f8c63552e4759cc417ca559ff613ba2d7e1997bb8",
+    "role": "user"
+  },
+  "CQUCHX0503003": {
+    "password_hash": "d77ab92a6e05f62bac412fb9ca488be5998eec249cfa646bb58d496916695693",
+    "role": "user"
+  },
+  "CQUCHX0503004": {
+    "password_hash": "183251ea95e3c62245a7173db8a3437c079755862ea6aa35b6a8ce2effd1d2b7",
+    "role": "user"
+  },
+  "CQUCHX0503005": {
+    "password_hash": "b026916feff745aa832b49684a0e24d8125006e84c786dc05960f6017b68bec8",
+    "role": "user"
+  },
+  "CQUCHX0503006": {
+    "password_hash": "598103f5cbf6abc7ea1d418d0cf73c8b68d9dae9da111beb418b4f0c626269b6",
+    "role": "user"
+  },
+  "CQUCHX0503007": {
+    "password_hash": "2baec259db4def9b387d5a10451ede0522b044a1aa9facdbac93f7cbcda69300",
+    "role": "user"
+  },
+  "CQUCHX0503008": {
+    "password_hash": "1d789334af342a93deebdc9359600c03c83eb0e9f269fc28d2322887bf842eef",
+    "role": "user"
+  },
+  "CQUCHX0503009": {
+    "password_hash": "65203abb883cfb5b3fdb61cf16129705af23f0b2aa58ed25727692ace4a2013f",
+    "role": "user"
+  },
+  "CQUCHX0503010": {
+    "password_hash": "74982865070e56924404b76855fa1e46dde60b46605bf74331df966e265ae270",
+    "role": "user"
   }
 }

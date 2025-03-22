@@ -1,6 +1,6 @@
 from flask import Flask, render_template  
 from flask_cors import CORS  
-from routes import drone_routes  
+from routes import drone_routes,test_routes
 from database import init_db  
 
 app = Flask(__name__, static_folder='static', template_folder='templates')  
@@ -10,7 +10,8 @@ CORS(app)
 init_db()  
 
 # 注册API路由  
-app.register_blueprint(drone_routes)  
+app.register_blueprint(drone_routes)
+app.register_blueprint(test_routes)  
 
 # 添加前端页面路由  
 @app.route('/')  

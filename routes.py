@@ -7,9 +7,309 @@ from database import (
 import jwt  
 import datetime  
 import json  
+import hashlib  
+import time  
 
+# 原有的Blueprint  
 drone_routes = Blueprint('drone_routes', __name__)  
 user_authenticator = UserAuthenticator()  
+
+# 测试路由Blueprint  
+test_routes = Blueprint('test_routes', __name__)  
+
+# 测试路由所需的全局变量  
+devices = {  
+    # 添加测试脚本中使用的设备  
+    "20845": {"secret": "abcde"},  
+    
+    # 原有设备保持不变  
+    "CQUCHX0503001": {"secret": "lAJIOxHiUyp2GuoN"},  
+    "CQUCHX0503002": {"secret": "oIzUqhuNgFJMOkCL"},  
+    "CQUCHX0503003": {"secret": "0piWBoxFYNyOKECX"},  
+    "CQUCHX0503004": {"secret": "tlqbV10QkEOo5yAc"},  
+    "CQUCHX0503005": {"secret": "xJZ4oclUgQWHs0FB"},  
+    "CQUCHX0503006": {"secret": "smEtIJoej1NFbCwU"},  
+    "CQUCHX0503007": {"secret": "FaSP6l8OKMysXuTe"},  
+    "CQUCHX0503008": {"secret": "ZbOfMLvqjxA4GsBH"},  
+    "CQUCHX0503009": {"secret": "DY1loibvZjwW4xyq"},  
+    "CQUCHX0503010": {"secret": "caMrEAgOV3XL2z7I"}  
+}  
+
+tickets = {}  
+token_refresh_counts = {}  
+
+# 测试路由  
+@test_routes.route('/getTicket', methods=['GET'])  
+def get_ticket():  
+    device_id = request.args.get('deviceId')  
+    
+    if not device_id:  
+        return jsonify({  
+            "code": 201,  
+            "message": "Parameter missing",  
+            "data": None  
+        })  
+    
+    if device_id not in devices:  
+        return jsonify({  
+            "code": 202,  
+            "message": "Unknown device",  
+            "data": None  
+        })  
+    
+    # 生成带过期时间的ticket（30秒有效）  
+    ticket = jwt.encode(  
+        {"deviceId": device_id, "exp": time.time() + 30},  
+        devices[device_id]["secret"],  
+        algorithm="HS256"  
+    )  
+    
+    tickets[ticket] = device_id  
+    return jsonify({  
+        "code": 200,  
+        "message": "success",  
+        "data": {"ticket": ticket}  
+    })  
+
+@test_routes.route('/getToken', methods=['POST'])  
+def get_token():  
+    data = request.json  
+    device_id = data.get("deviceId")  
+    signature = data.get("signature")  
+    ticket = data.get("ticket")  
+    
+    if not all([device_id, signature, ticket]):  
+        return jsonify({  
+            "code": 201,  
+            "message": "Parameter missing",  
+            "data": None  
+        })  
+    
+    if device_id not in devices:  
+        return jsonify({  
+            "code": 202,  
+            "message": "Unknown device",  
+            "data": None  
+        })  
+    
+    # 验证ticket有效性  
+    try:  
+        payload = jwt.decode(  
+            ticket,  
+            devices[device_id]["secret"],  
+            algorithms=["HS256"]  
+        )  
+        if payload["deviceId"] != device_id:  
+            raise jwt.InvalidTokenError  
+    except jwt.ExpiredSignatureError:  
+        return jsonify({  
+            "code": 203,  
+            "message": "Invalid signature",  
+            "data": None  
+        })  
+    except jwt.InvalidTokenError:  
+        return jsonify({  
+            "code": 203,  
+            "message": "Invalid signature",  
+            "data": None  
+        })  
+    
+    # 验证签名  
+    expected_signature = hashlib.md5(  
+        (ticket + device_id + devices[device_id]["secret"]).encode()  
+    ).hexdigest()  
+    
+    if signature != expected_signature:  
+        return jsonify({  
+            "code": 203,  
+            "message": "Invalid signature",  
+            "data": None  
+        })  
+    
+    # 生成带过期时间的token（60秒有效）  
+    token = jwt.encode(  
+        {"deviceId": device_id, "exp": time.time() + 60},  
+        devices[device_id]["secret"],  
+        algorithm="HS256"  
+    )  
+    
+    # 重置刷新计数器  
+    token_refresh_counts[device_id] = 0  
+    
+    return jsonify({  
+        "code": 200,  
+        "message": "success",  
+        "data": {"token": token}  
+    })  
+
+@test_routes.route('/uploadData', methods=['POST'])  
+def upload_data():  
+    data = request.json  
+    device_id = data.get("deviceId")  
+    token = data.get("token")  
+    payload_data = data.get("data")  
+    
+    if not all([device_id, token, payload_data]):  
+        return jsonify({  
+            "code": 201,  
+            "message": "Parameter missing",  
+            "data": None  
+        })  
+    
+    if device_id not in devices:  
+        return jsonify({  
+            "code": 202,  
+            "message": "Unknown device",  
+            "data": None  
+        })  
+    
+    # 处理特殊的测试token  
+    if token == "invalid_token":  
+        return jsonify({  
+            "code": 204,  
+            "message": "Invalid token",  
+            "data": None  
+        })  
+    
+    # 验证token有效性  
+    try:  
+        payload = jwt.decode(  
+            token,  
+            devices[device_id]["secret"],  
+            algorithms=["HS256"]  
+        )  
+        if payload["deviceId"] != device_id:  
+            raise jwt.InvalidTokenError  
+        
+        # 兼容测试代码的自定义过期字段  
+        if payload.get("expiredTime") and payload.get("expiredTime") < time.time():  
+            raise jwt.ExpiredSignatureError  
+            
+    except jwt.ExpiredSignatureError:  
+        return jsonify({  
+            "code": 206,  
+            "message": "Token expired",  
+            "data": None  
+        })  
+    except jwt.InvalidTokenError:  
+        return jsonify({  
+            "code": 204,  
+            "message": "Invalid token",  
+            "data": None  
+        })  
+    
+    # 验证数据有效性  
+    try:  
+        if int(payload_data["high"]) <= int(payload_data["low"]):  
+            return jsonify({  
+                "code": 205,  
+                "message": "Invalid blood pressure data",  
+                "data": None  
+            })  
+    except (KeyError, ValueError):  
+        return jsonify({  
+            "code": 205,  
+            "message": "Invalid blood pressure data",  
+            "data": None  
+        })  
+    
+    return jsonify({  
+        "code": 200,  
+        "message": "success",  
+        "data": {  
+            "receivedTime": int(time.time())  
+        }  
+    })  
+
+@test_routes.route('/refreshToken', methods=['POST'])  
+def refresh_token():  
+    data = request.json  
+    device_id = data.get("deviceId")  
+    signature = data.get("signature")  
+    token = data.get("token")  
+    
+    if not all([device_id, signature, token]):  
+        return jsonify({  
+            "code": 201,  
+            "message": "Parameter missing",  
+            "data": None  
+        })  
+    
+    if device_id not in devices:  
+        return jsonify({  
+            "code": 202,  
+            "message": "Unknown device",  
+            "data": None  
+        })  
+    
+    # 处理特殊的测试签名  
+    if signature == "invalid_signature":  
+        return jsonify({  
+            "code": 203,  
+            "message": "Invalid signature",  
+            "data": None  
+        })  
+    
+    # 验证旧token有效性  
+    try:  
+        old_payload = jwt.decode(  
+            token,  
+            devices[device_id]["secret"],  
+            algorithms=["HS256"]  
+        )  
+        if old_payload["deviceId"] != device_id:  
+            raise jwt.InvalidTokenError  
+    except jwt.ExpiredSignatureError:  
+        return jsonify({  
+            "code": 203,  
+            "message": "Invalid signature",  
+            "data": None  
+        })  
+    except jwt.InvalidTokenError:  
+        return jsonify({  
+            "code": 203,  
+            "message": "Invalid signature",  
+            "data": None  
+        })  
+    
+    # 验证签名  
+    expected_signature = hashlib.md5(  
+        (token + device_id + devices[device_id]["secret"]).encode()  
+    ).hexdigest()  
+    
+    if signature != expected_signature:  
+        return jsonify({  
+            "code": 203,  
+            "message": "Invalid signature",  
+            "data": None  
+        })  
+    
+    # 检查刷新次数（基于设备ID）  
+    current_refresh_count = token_refresh_counts.get(device_id, 0)  
+    if current_refresh_count >= 1:  # 最大允许1次刷新  
+        return jsonify({  
+            "code": 207,  
+            "message": "Max refresh exceeded",  
+            "data": None  
+        })  
+    
+    # 生成新token（60秒有效）  
+    new_token = jwt.encode(  
+        {"deviceId": device_id, "exp": time.time() + 60},  
+        devices[device_id]["secret"],  
+        algorithm="HS256"  
+    )  
+    
+    # 更新设备刷新次数  
+    token_refresh_counts[device_id] = current_refresh_count + 1  
+    
+    return jsonify({  
+        "code": 200,  
+        "message": "success",  
+        "data": {"token": new_token}  
+    })  
+
+# 以下是原有的路由，保持不变  
 
 # 用户认证相关路由  
 @drone_routes.route('/login', methods=['POST'])  

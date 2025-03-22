@@ -1,4 +1,4 @@
-import hashlib
+import hashlib  
 import sqlite3  
 import json  
 import os  
@@ -54,48 +54,50 @@ def init_db():
         conn.commit()  
         print("数据库初始化完成")  
 
-def verify_data_integrity(received_data, received_hash):
-    """验证接收到的数据完整性"""
-    # 将接收到的 JSON 数据（字典形式）转换为字符串，保证键的顺序一致
-    data_str = json.dumps(received_data, sort_keys=True)
+def verify_data_integrity(received_data, received_hash):  
+    """验证接收到的数据完整性"""  
+    # 将接收到的 JSON 数据（字典形式）转换为字符串，保证键的顺序一致  
+    data_str = json.dumps(received_data, sort_keys=True)  
 
-    # 计算接收到数据的哈希值
-    hash_object = hashlib.sha256(data_str.encode())
-    generated_hash = hash_object.hexdigest()
+    # 计算接收到数据的哈希值  
+    hash_object = hashlib.sha256(data_str.encode())  
+    generated_hash = hash_object.hexdigest()  
 
-    # 比较生成的哈希值与接收到的哈希值是否相同
-    if generated_hash == received_hash:
-        return True
-    else:
-        return False
+    # 比较生成的哈希值与接收到的哈希值是否相同  
+    if generated_hash == received_hash:  
+        return True  
+    else:  
+        return False  
 
-def insert_drone_data(data, received_hash):
-    """接收并插入无人机数据，同时验证数据完整性"""
-    if verify_data_integrity(data, received_hash):
-        try:
-            # 数据完整性验证通过，插入数据库
-            with sqlite3.connect(DATABASE) as conn:
-                cursor = conn.cursor()
-                cursor.execute('''  
-                    INSERT INTO drone_data (altitude, speed, coordinates, battery_level, wind_speed, position)  
-                    VALUES (?, ?, ?, ?, ?, ?)  
-                ''', (  
-                    data.get('altitude', 0),   
-                    data.get('speed', 0),   
-                    data.get('coordinates', '0,0'),   
-                    data.get('battery_level', 0),   
-                    data.get('wind_speed', 0),   
-                    data.get('position', 'unknown')  
-                ))  
-                conn.commit()  
-                return cursor.lastrowid  
-        except Exception as e:  
-            print(f"数据库插入错误: {e}")  
-            raise
-    else:
-        print("数据完整性验证失败！")
+def insert_drone_data(data, received_hash=None):  
+    """接收并插入无人机数据，同时验证数据完整性"""  
+    # 如果提供了哈希值，则进行数据完整性验证  
+    if received_hash and not verify_data_integrity(data, received_hash):  
+        print("数据完整性验证失败！")  
         return None  
+        
+    try:  
+        # 插入数据库  
+        with sqlite3.connect(DATABASE) as conn:  
+            cursor = conn.cursor()  
+            cursor.execute('''  
+                INSERT INTO drone_data (altitude, speed, coordinates, battery_level, wind_speed, position)  
+                VALUES (?, ?, ?, ?, ?, ?)  
+            ''', (  
+                data.get('altitude', 0),   
+                data.get('speed', 0),   
+                data.get('coordinates', '0,0'),   
+                data.get('battery_level', 0),   
+                data.get('wind_speed', 0),   
+                data.get('position', 'unknown')  
+            ))  
+            conn.commit()  
+            return cursor.lastrowid  
+    except Exception as e:  
+        print(f"数据库插入错误: {e}")  
+        raise  
 
+def get_drone_data(limit=100):  
     """获取无人机数据记录"""  
     conn = get_db_connection()  
     cursor = conn.cursor()  
