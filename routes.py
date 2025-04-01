@@ -4,9 +4,12 @@ from database import (
     insert_drone_data, get_drone_data, get_latest_drone_data,  
     record_command, get_commands, log_message, get_logs  
 )  
+from mongodb import save_to_mongodb
+from app import mongo_storage
 import jwt  
 import datetime  
 import json  
+
 
 drone_routes = Blueprint('drone_routes', __name__)  
 user_authenticator = UserAuthenticator()  
@@ -100,6 +103,7 @@ def send_drone_data():
                     f"坐标={data.get('coordinates', 'N/A')}, 电量={data.get('battery_level', 'N/A')}%", "data")  
         
         # 插入数据到数据库  
+        mongo_storage.save(data)
         insert_drone_data(data)  
         return jsonify({'message': 'Drone data received successfully'}), 200  
     except Exception as e:  
